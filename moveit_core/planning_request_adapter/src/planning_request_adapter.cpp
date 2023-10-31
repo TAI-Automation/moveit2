@@ -39,10 +39,18 @@
 #include <rclcpp/logger.hpp>
 #include <functional>
 #include <algorithm>
+#include <moveit/utils/logger.hpp>
 
 namespace planning_request_adapter
 {
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("moveit.planning_request_adapter");
+namespace
+{
+rclcpp::Logger getLogger()
+{
+  static auto logger = moveit::makeChildLogger("planning_request_adapter");
+  return logger;
+}
+}  // namespace
 
 namespace
 {
@@ -72,12 +80,13 @@ bool callAdapter(const PlanningRequestAdapter& adapter, const PlanningRequestAda
     std::swap(res.added_path_index, added_path_index);
     bool result = adapter.adaptAndPlan(planner, planning_scene, req, res);
     std::swap(res.added_path_index, added_path_index);
-    RCLCPP_DEBUG_STREAM(LOGGER, adapter.getDescription() << ": " << moveit::core::errorCodeToString(res.error_code));
+    RCLCPP_DEBUG_STREAM(getLogger(), adapter.getDescription()
+                                         << ": " << moveit::core::errorCodeToString(res.error_code));
     return result;
   }
   catch (std::exception& ex)
   {
-    RCLCPP_ERROR(LOGGER, "Exception caught executing adapter '%s': %s\nSkipping adapter instead.",
+    RCLCPP_ERROR(getLogger(), "Exception caught executing adapter '%s': %s\nSkipping adapter instead.",
                  adapter.getDescription().c_str(), ex.what());
     return planner(planning_scene, req, res);
   }

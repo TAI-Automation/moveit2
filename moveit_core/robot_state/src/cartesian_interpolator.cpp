@@ -41,18 +41,26 @@
 #include <geometric_shapes/check_isometry.h>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+#include <moveit/utils/logger.hpp>
 
 namespace moveit
 {
 namespace core
 {
+namespace
+{
+rclcpp::Logger getLogger()
+{
+  static auto logger = moveit::makeChildLogger("cartesian_interpolator");
+  return logger;
+}
+}  // namespace
+
 /** \brief It is recommended that there are at least 10 steps per trajectory
  * for testing jump thresholds with computeCartesianPath. With less than 10 steps
  * it is difficult to choose a jump_threshold parameter that effectively separates
  * valid paths from paths with large joint space jumps. */
 static const std::size_t MIN_STEPS_FOR_JUMP_THRESH = 10;
-
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("moveit_robot_state.cartesian_interpolator");
 
 CartesianInterpolator::Distance CartesianInterpolator::computeCartesianPath(
     RobotState* start_state, const JointModelGroup* group, std::vector<RobotStatePtr>& traj, const LinkModel* link,
@@ -101,9 +109,10 @@ CartesianInterpolator::Percentage CartesianInterpolator::computeCartesianPath(
 
   if (max_step.translation <= 0.0 && max_step.rotation <= 0.0)
   {
-    RCLCPP_ERROR(LOGGER, "Invalid MaxEEFStep passed into computeCartesianPath. Both the MaxEEFStep.rotation and "
-                         "MaxEEFStep.translation components must be non-negative and at least one component must be "
-                         "greater than zero");
+    RCLCPP_ERROR(getLogger(),
+                 "Invalid MaxEEFStep passed into computeCartesianPath. Both the MaxEEFStep.rotation and "
+                 "MaxEEFStep.translation components must be non-negative and at least one component must be "
+                 "greater than zero");
     return 0.0;
   }
 
@@ -242,7 +251,7 @@ CartesianInterpolator::Percentage CartesianInterpolator::checkRelativeJointSpace
 {
   if (traj.size() < MIN_STEPS_FOR_JUMP_THRESH)
   {
-    RCLCPP_WARN(LOGGER,
+    RCLCPP_WARN(getLogger(),
                 "The computed trajectory is too short to detect jumps in joint-space "
                 "Need at least %zu steps, only got %zu. Try a lower max_step.",
                 MIN_STEPS_FOR_JUMP_THRESH, traj.size());
@@ -265,7 +274,7 @@ CartesianInterpolator::Percentage CartesianInterpolator::checkRelativeJointSpace
   {
     if (dist_vector[i] > thres)
     {
-      RCLCPP_DEBUG(LOGGER, "Truncating Cartesian path due to detected jump in joint-space distance");
+      RCLCPP_DEBUG(getLogger(), "Truncating Cartesian path due to detected jump in joint-space distance");
       percentage = static_cast<double>(i + 1) / static_cast<double>(traj.size());
       traj.resize(i + 1);
       break;
@@ -302,7 +311,7 @@ CartesianInterpolator::Percentage CartesianInterpolator::checkAbsoluteJointSpace
           joint_threshold = prismatic_threshold;
           break;
         default:
-          RCLCPP_WARN(LOGGER,
+          RCLCPP_WARN(getLogger(),
                       "Joint %s has not supported type %s. \n"
                       "checkAbsoluteJointSpaceJump only supports prismatic and revolute joints.",
                       joint->getName().c_str(), joint->getTypeName().c_str());
@@ -313,8 +322,8 @@ CartesianInterpolator::Percentage CartesianInterpolator::checkAbsoluteJointSpace
         double distance = traj[traj_ix]->distance(*traj[traj_ix + 1], joint);
         if (distance > joint_threshold)
         {
-          RCLCPP_DEBUG(LOGGER, "Truncating Cartesian path due to detected jump of %.4f > %.4f in joint %s", distance,
-                       joint_threshold, joint->getName().c_str());
+          RCLCPP_DEBUG(getLogger(), "Truncating Cartesian path due to detected jump of %.4f > %.4f in joint %s",
+                       distance, joint_threshold, joint->getName().c_str());
           still_valid = false;
           break;
         }
