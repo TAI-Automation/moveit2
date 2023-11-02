@@ -54,7 +54,7 @@ namespace default_planner_request_adapters
 class FixWorkspaceBounds : public planning_request_adapter::PlanningRequestAdapter
 {
 public:
-  FixWorkspaceBounds() : logger_(moveit::makeChildLogger("fix_workspace_bounds"))
+  FixWorkspaceBounds() : logger_(moveit::getLogger("fix_workspace_bounds"))
   {
   }
 

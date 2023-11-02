@@ -59,7 +59,7 @@ namespace default_planner_request_adapters
 class FixStartStatePathConstraints : public planning_request_adapter::PlanningRequestAdapter
 {
 public:
-  FixStartStatePathConstraints() : logger_(moveit::makeChildLogger("fix_start_state_path_constraints"))
+  FixStartStatePathConstraints() : logger_(moveit::getLogger("fix_start_state_path_constraints"))
   {
   }
 

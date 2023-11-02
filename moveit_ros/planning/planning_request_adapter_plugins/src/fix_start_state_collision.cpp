@@ -60,7 +60,7 @@ namespace default_planner_request_adapters
 class FixStartStateCollision : public planning_request_adapter::PlanningRequestAdapter
 {
 public:
-  FixStartStateCollision() : logger_(moveit::makeChildLogger("fix_start_state_collision"))
+  FixStartStateCollision() : logger_(moveit::getLogger("fix_start_state_collision"))
   {
   }
 

@@ -52,7 +52,7 @@ planning_pipeline::PlanningPipeline::PlanningPipeline(const moveit::core::RobotM
   , node_(node)
   , parameter_namespace_(parameter_namespace)
   , robot_model_(model)
-  , logger_(moveit::makeChildLogger("planning_pipeline"))
+  , logger_(moveit::getLogger("planning_pipeline"))
 {
   auto param_listener = planning_pipeline_parameters::ParamListener(node, parameter_namespace);
   const auto params = param_listener.get_params();
@@ -81,7 +81,7 @@ planning_pipeline::PlanningPipeline::PlanningPipeline(const moveit::core::RobotM
   , planner_plugin_name_(planner_plugin_name)
   , adapter_plugin_names_(adapter_plugin_names)
   , robot_model_(model)
-  , logger_(moveit::makeChildLogger("planning_pipeline"))
+  , logger_(moveit::getLogger("planning_pipeline"))
 {
   configure();
 }

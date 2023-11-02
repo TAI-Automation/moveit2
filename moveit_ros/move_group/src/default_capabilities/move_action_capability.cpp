@@ -45,8 +45,6 @@
 #include <moveit/move_group/capability_names.h>
 #include <moveit/utils/logger.hpp>
 
-using moveit::getLogger;
-
 namespace move_group
 {
 
@@ -54,6 +52,11 @@ namespace
 {
 constexpr bool DISPLAY_COMPUTED_MOTION_PLANS = true;
 constexpr bool CHECK_SOLUTION_PATHS = true;
+
+rclcpp::Logger getLogger()
+{
+  return moveit::getLogger("MoveGroupMoveAction");
+}
 }  // namespace
 
 MoveGroupMoveAction::MoveGroupMoveAction()

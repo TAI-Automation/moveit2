@@ -49,7 +49,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
 
   auto node = std::make_shared<rclcpp::Node>("list_planning_adapter_plugins");
-  moveit::setLogger(node->get_logger());
+  moveit::setNodeLoggerName(node->get_name());
 
   std::unique_ptr<pluginlib::ClassLoader<planning_request_adapter::PlanningRequestAdapter>> loader;
   try

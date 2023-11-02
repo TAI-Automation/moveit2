@@ -43,6 +43,13 @@
 
 namespace moveit_servo
 {
+namespace
+{
+rclcpp::Logger getLogger()
+{
+  return moveit::getLogger("CollisionMonitor");
+}
+}  // namespace
 
 CollisionMonitor::CollisionMonitor(const planning_scene_monitor::PlanningSceneMonitorPtr& planning_scene_monitor,
                                    const servo::Params& servo_params, std::atomic<double>& collision_velocity_scale)
@@ -58,11 +65,11 @@ void CollisionMonitor::start()
   if (!monitor_thread_.joinable())
   {
     monitor_thread_ = std::thread(&CollisionMonitor::checkCollisions, this);
-    RCLCPP_INFO_STREAM(moveit::getLogger(), "Collision monitor started");
+    RCLCPP_INFO_STREAM(getLogger(), "Collision monitor started");
   }
   else
   {
-    RCLCPP_ERROR_STREAM(moveit::getLogger(), "Collision monitor could not be started");
+    RCLCPP_ERROR_STREAM(getLogger(), "Collision monitor could not be started");
   }
 }
 
@@ -73,7 +80,7 @@ void CollisionMonitor::stop()
   {
     monitor_thread_.join();
   }
-  RCLCPP_INFO_STREAM(moveit::getLogger(), "Collision monitor stopped");
+  RCLCPP_INFO_STREAM(getLogger(), "Collision monitor stopped");
 }
 
 void CollisionMonitor::checkCollisions()

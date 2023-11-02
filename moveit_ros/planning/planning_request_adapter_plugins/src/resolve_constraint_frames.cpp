@@ -46,7 +46,7 @@ static const rclcpp::Logger LOGGER = rclcpp::get_logger("moveit_ros.resolve_cons
 class ResolveConstraintFrames : public planning_request_adapter::PlanningRequestAdapter
 {
 public:
-  ResolveConstraintFrames() : logger_(moveit::makeChildLogger("resolve_constraint_frames"))
+  ResolveConstraintFrames() : logger_(moveit::getLogger("resolve_constraint_frames"))
   {
   }
 

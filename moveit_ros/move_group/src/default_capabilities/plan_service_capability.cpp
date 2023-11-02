@@ -47,6 +47,11 @@ namespace
 {
 constexpr bool DISPLAY_COMPUTED_MOTION_PLANS = true;
 constexpr bool CHECK_SOLUTION_PATHS = true;
+
+rclcpp::Logger getLogger()
+{
+  return moveit::getLogger("MoveGroupPlanService");
+}
 }  // namespace
 
 MoveGroupPlanService::MoveGroupPlanService() : MoveGroupCapability("MotionPlanService")
@@ -67,7 +72,7 @@ bool MoveGroupPlanService::computePlanService(const std::shared_ptr<rmw_request_
                                               const std::shared_ptr<moveit_msgs::srv::GetMotionPlan::Request>& req,
                                               const std::shared_ptr<moveit_msgs::srv::GetMotionPlan::Response>& res)
 {
-  RCLCPP_INFO(moveit::getLogger(), "Received new planning service request...");
+  RCLCPP_INFO(getLogger(), "Received new planning service request...");
   // before we start planning, ensure that we have the latest robot state received...
   if (static_cast<bool>(req->motion_plan_request.start_state.is_diff))
     context_->planning_scene_monitor_->waitForCurrentRobotState(context_->moveit_cpp_->getNode()->get_clock()->now());
@@ -89,14 +94,14 @@ bool MoveGroupPlanService::computePlanService(const std::shared_ptr<rmw_request_
     if (!planning_pipeline->generatePlan(ps, req->motion_plan_request, mp_res, context_->debug_, CHECK_SOLUTION_PATHS,
                                          DISPLAY_COMPUTED_MOTION_PLANS))
     {
-      RCLCPP_ERROR(moveit::getLogger(), "Generating a plan with planning pipeline failed.");
+      RCLCPP_ERROR(getLogger(), "Generating a plan with planning pipeline failed.");
       mp_res.error_code.val = moveit_msgs::msg::MoveItErrorCodes::FAILURE;
     }
     mp_res.getMessage(res->motion_plan_response);
   }
   catch (std::exception& ex)
   {
-    RCLCPP_ERROR(moveit::getLogger(), "Planning pipeline threw an exception: %s", ex.what());
+    RCLCPP_ERROR(getLogger(), "Planning pipeline threw an exception: %s", ex.what());
     res->motion_plan_response.error_code.val = moveit_msgs::msg::MoveItErrorCodes::FAILURE;
   }
 

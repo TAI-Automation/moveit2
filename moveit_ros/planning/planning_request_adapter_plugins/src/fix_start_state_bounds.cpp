@@ -63,7 +63,7 @@ namespace default_planner_request_adapters
 class FixStartStateBounds : public planning_request_adapter::PlanningRequestAdapter
 {
 public:
-  FixStartStateBounds() : logger_(moveit::makeChildLogger("fix_start_state_bounds"))
+  FixStartStateBounds() : logger_(moveit::getLogger("fix_start_state_bounds"))
   {
   }
 
