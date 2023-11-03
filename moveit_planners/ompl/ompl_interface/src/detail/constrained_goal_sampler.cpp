@@ -133,6 +133,9 @@ bool ompl_interface::ConstrainedGoalSampler::sampleUsingConstraintSampler(const 
       if (constraint_sampler_->sample(work_state_, planning_context_->getMaximumStateSamplingAttempts()))
       {
         work_state_.update();
+
+        // TODO(pmnev): Figure out what is going wrong here.
+
         if (kinematic_constraint_set_->decide(work_state_, verbose).satisfied)
         {
           if (checkStateValidity(new_goal, work_state_, verbose))

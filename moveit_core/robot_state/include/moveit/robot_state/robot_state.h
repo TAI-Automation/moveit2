@@ -1754,6 +1754,46 @@ private:
   void markAcceleration();
   void markEffort();
 
+
+  double computeLinkage(const double crank, const JointModel* jm) const {
+
+    double base_width = jm->getLinkageBaseWidth();
+    double leg_length = jm->getLinkageLegLength();
+    double top_width = jm->getLinkageTopWidth();
+
+    double crank_angle = -crank+M_PI_2;
+    double diag_length = sqrt(pow(base_width,2.0)+ pow(leg_length,2.0) -2*leg_length*base_width*cos(crank_angle));
+    double psi = asin(sin(crank_angle)/diag_length*base_width);
+    double phi = acos((pow(top_width,2)+pow(diag_length,2)-pow(leg_length,2))/(2*top_width*diag_length)); 
+    double gamma = psi+phi;
+
+    return M_PI_2-gamma;
+
+  }
+
+  void updateLinkageJoints(const JointModelGroup* group){
+
+
+    for (const JointModel* jm : group->getLinkageJointModels()){
+
+      const int fvi = jm->getFirstVariableIndex();
+
+      // Get the position based on the index of the linked joint
+      double crank_angle = position_[jm->getLinkage()->getFirstVariableIndex()];
+      
+      double follow = computeLinkage(crank_angle, jm);
+      RCLCPP_DEBUG_STREAM(rclcpp::get_logger("moveit_robot_state.robot_state"), "Updating mimic joints " << follow << " the index is " << fvi << " the parent index is " << jm->getLinkage()->getFirstVariableIndex());
+
+      position_[fvi] = follow;
+
+      markDirtyJointTransforms(jm);
+
+    }
+
+  }
+
+
+  // This is not the same as updating a single linkage joint.
   void updateMimicJoint(const JointModel* joint)
   {
     double v = position_[joint->getFirstVariableIndex()];

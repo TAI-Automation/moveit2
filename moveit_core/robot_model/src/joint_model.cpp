@@ -54,6 +54,10 @@ JointModel::JointModel(const std::string& name, size_t joint_index, size_t first
   , mimic_(nullptr)
   , mimic_factor_(1.0)
   , mimic_offset_(0.0)
+  , linkage_joint_(nullptr)
+  , linkage_leg_length_(0.0)
+  , linkage_base_width_(0.0)
+  , linkage_top_width_(0.0)
   , passive_(false)
   , distance_factor_(1.0)
 {
@@ -250,6 +254,15 @@ void JointModel::setMimic(const JointModel* mimic, double factor, double offset)
   mimic_ = mimic;
   mimic_factor_ = factor;
   mimic_offset_ = offset;
+}
+
+
+void JointModel::setLinkage(const JointModel* linked, double leg_length, double base_width, double top_width)
+{
+  linkage_joint_ = linked;
+  linkage_leg_length_ = leg_length;
+  linkage_base_width_ = base_width;
+  linkage_top_width_ = top_width;
 }
 
 void JointModel::addMimicRequest(const JointModel* joint)

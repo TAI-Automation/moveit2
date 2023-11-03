@@ -178,6 +178,11 @@ public:
     return mimic_joints_;
   }
 
+  const std::vector<const JointModel*>& getLinkageJointModels() const
+  {
+    return linkage_joints_;
+  }
+
   /** \brief Get the array of continuous joints used in this group (may include mimic joints). */
   const std::vector<const JointModel*>& getContinuousJointModels() const
   {
@@ -586,11 +591,16 @@ public:
   bool computeJointVariableIndices(const std::vector<std::string>& joint_names,
                                    std::vector<size_t>& joint_bijection) const;
 
+  double computeLinkage(const double crank, const JointModel* jm) const;                                   
+
 protected:
   /** \brief Update the variable values for the state of a group with respect to the mimic joints. This only updates
       mimic joints that have the parent in this group. If there is a joint mimicking one that is outside the group,
       there are no values to be read (\e values is only the group state) */
   void updateMimicJoints(double* values) const;
+
+  void updateLinkageJoints(double* values) const;
+
 
   /** \brief Owner model */
   const RobotModel* parent_model_;
@@ -615,6 +625,9 @@ protected:
 
   /** \brief Joints that mimic other joints */
   std::vector<const JointModel*> mimic_joints_;
+
+  /** \brief Joints that link to other joints */
+  std::vector<const JointModel*> linkage_joints_;
 
   /** \brief The set of continuous joints this group contains */
   std::vector<const JointModel*> continuous_joint_model_vector_;

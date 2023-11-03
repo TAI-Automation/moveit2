@@ -141,11 +141,15 @@ JointModelGroup::JointModelGroup(const std::string& group_name, const srdf::Mode
 
       if (joint_model->getMimic() == nullptr)
       {
-        active_joint_model_vector_.push_back(joint_model);
-        active_joint_model_name_vector_.push_back(joint_model->getName());
-        active_joint_model_start_index_.push_back(variable_count_);
-        active_joint_models_bounds_.push_back(&joint_model->getVariableBounds());
-        active_variable_count_ += vc;
+        if (joint_model->getLinkage()){
+          linkage_joints_.push_back(joint_model);
+        } else {
+          active_joint_model_vector_.push_back(joint_model);
+          active_joint_model_name_vector_.push_back(joint_model->getName());
+          active_joint_model_start_index_.push_back(variable_count_);
+          active_joint_models_bounds_.push_back(&joint_model->getVariableBounds());
+          active_variable_count_ += vc; 
+        }
       }
       else
         mimic_joints_.push_back(joint_model);
@@ -342,7 +346,7 @@ void JointModelGroup::getVariableRandomPositions(random_numbers::RandomNumberGen
     active_joint_model_vector_[i]->getVariableRandomPositions(rng, values + active_joint_model_start_index_[i],
                                                               *active_joint_bounds[i]);
   }
-
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 
@@ -358,6 +362,7 @@ void JointModelGroup::getVariableRandomPositionsNearBy(random_numbers::RandomNum
                                                                     near + active_joint_model_start_index_[i],
                                                                     distance);
   }
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 
@@ -384,6 +389,7 @@ void JointModelGroup::getVariableRandomPositionsNearBy(random_numbers::RandomNum
                                                                     near + active_joint_model_start_index_[i],
                                                                     distance);
   }
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 
@@ -405,6 +411,7 @@ void JointModelGroup::getVariableRandomPositionsNearBy(random_numbers::RandomNum
                                                                     near + active_joint_model_start_index_[i],
                                                                     distances[i]);
   }
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 
@@ -431,8 +438,10 @@ bool JointModelGroup::enforcePositionBounds(double* state, const JointBoundsVect
                                                              *active_joint_bounds[i]))
       change = true;
   }
-  if (change)
+  if (change){
+    updateLinkageJoints(state);
     updateMimicJoints(state);
+  }
   return change;
 }
 
@@ -470,7 +479,34 @@ void JointModelGroup::interpolate(const double* from, const double* to, double t
   }
 
   // now we update mimic as needed
+  updateLinkageJoints(state);
   updateMimicJoints(state);
+}
+
+
+  double JointModelGroup::computeLinkage(const double crank, const JointModel* jm) const {
+
+    double base_width = jm->getLinkageBaseWidth();
+    double leg_length = jm->getLinkageLegLength();
+    double top_width = jm->getLinkageTopWidth();
+
+    double crank_angle = -crank+M_PI_2;
+    double diag_length = sqrt(pow(base_width,2.0)+ pow(leg_length,2.0) -2*leg_length*base_width*cos(crank_angle));
+    double psi = asin(sin(crank_angle)/diag_length*base_width);
+    double phi = acos((pow(top_width,2)+pow(diag_length,2)-pow(leg_length,2))/(2*top_width*diag_length)); 
+    double gamma = psi+phi;
+
+    return M_PI_2-gamma;
+
+  }
+
+void JointModelGroup::updateLinkageJoints(double* values) const
+{
+  // update linkage (only local joints as we are dealing with a local group state)
+  for (const JointModel* jm : linkage_joints_){
+    values[jm->getFirstVariableIndex()] = computeLinkage(values[jm->getLinkage()->getFirstVariableIndex()],jm);
+  }
+    
 }
 
 void JointModelGroup::updateMimicJoints(double* values) const
@@ -499,6 +535,7 @@ void JointModelGroup::getVariableDefaultPositions(double* values) const
 {
   for (std::size_t i = 0; i < active_joint_model_vector_.size(); ++i)
     active_joint_model_vector_[i]->getVariableDefaultPositions(values + active_joint_model_start_index_[i]);
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 

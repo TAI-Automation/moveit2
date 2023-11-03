@@ -302,6 +302,7 @@ void RobotState::setToRandomPositions(const JointModelGroup* group, random_numbe
   const std::vector<const JointModel*>& joints = group->getActiveJointModels();
   for (const JointModel* joint : joints)
     joint->getVariableRandomPositions(rng, position_ + joint->getFirstVariableIndex());
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -326,6 +327,8 @@ void RobotState::setToRandomPositionsNearBy(const JointModelGroup* group, const 
     joints[i]->getVariableRandomPositionsNearBy(rng, position_ + joints[i]->getFirstVariableIndex(),
                                                 seed.position_ + idx, distances[i]);
   }
+  updateLinkageJoints(group);
+
   updateMimicJoints(group);
 }
 
@@ -347,6 +350,8 @@ void RobotState::setToRandomPositionsNearBy(const JointModelGroup* group, const 
     joint->getVariableRandomPositionsNearBy(rng, position_ + joint->getFirstVariableIndex(), seed.position_ + idx,
                                             distance);
   }
+  updateLinkageJoints(group);
+
   updateMimicJoints(group);
 }
 
@@ -528,6 +533,7 @@ void RobotState::setJointGroupPositions(const JointModelGroup* group, const doub
     for (std::size_t i = 0; i < il.size(); ++i)
       position_[il[i]] = gstate[i];
   }
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -536,6 +542,8 @@ void RobotState::setJointGroupPositions(const JointModelGroup* group, const Eige
   const std::vector<int>& il = group->getVariableIndexList();
   for (std::size_t i = 0; i < il.size(); ++i)
     position_[il[i]] = values(i);
+
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -548,6 +556,7 @@ void RobotState::setJointGroupActivePositions(const JointModelGroup* group, cons
     setJointPositions(jm, &gstate[i]);
     i += jm->getVariableCount();
   }
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -560,6 +569,7 @@ void RobotState::setJointGroupActivePositions(const JointModelGroup* group, cons
     setJointPositions(jm, &values(i));
     i += jm->getVariableCount();
   }
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -1021,6 +1031,7 @@ void RobotState::interpolate(const RobotState& to, double t, RobotState& state, 
     const int idx = joint->getFirstVariableIndex();
     joint->interpolate(position_ + idx, to.position_ + idx, t, state.position_ + idx);
   }
+  state.updateLinkageJoints(joint_group);
   state.updateMimicJoints(joint_group);
 }
 

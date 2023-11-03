@@ -386,6 +386,28 @@ public:
   /** \brief Get the dimension of the state space that corresponds to this joint */
   virtual unsigned int getStateSpaceDimension() const = 0;
 
+
+  const JointModel* getLinkage() const
+  {
+    return linkage_joint_;
+  }
+
+
+  double getLinkageLegLength() const {
+    return linkage_leg_length_;
+  }
+
+  double getLinkageBaseWidth() const {
+    return linkage_base_width_;
+  }
+  
+  double getLinkageTopWidth() const {
+    return linkage_top_width_;
+  }
+
+
+
+
   /** \brief Get the joint this one is mimicking */
   const JointModel* getMimic() const
   {
@@ -403,6 +425,9 @@ public:
   {
     return mimic_factor_;
   }
+
+  void setLinkage(const JointModel* linked, double leg_length, double base_width, double top_width);
+
 
   /** \brief Mark this joint as mimicking \e mimic using \e factor and \e offset */
   void setMimic(const JointModel* mimic, double factor, double offset);
@@ -510,6 +535,14 @@ protected:
 
   /** \brief The link after this joint */
   const LinkModel* child_link_model_;
+
+  const JointModel* linkage_joint_;
+
+  double linkage_leg_length_;
+  
+  double linkage_base_width_;
+
+  double linkage_top_width_;
 
   /** \brief The joint this one mimics (nullptr for joints that do not mimic) */
   const JointModel* mimic_;

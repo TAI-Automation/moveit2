@@ -610,6 +610,10 @@ private:
   /** \brief Compute helpful information about groups (that can be queried later) */
   void buildGroupsInfoEndEffectors(const srdf::Model& srdf_model);
 
+
+  /** \brief Given the URDF model build up the linkage joints (functionally dependent joints)*/
+  void buildLinkage(const urdf::ModelInterface& urdf_model);
+
   /** \brief Given the URDF model, build up the mimic joints (mutually constrained joints) */
   void buildMimic(const urdf::ModelInterface& urdf_model);
 

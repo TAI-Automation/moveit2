@@ -100,6 +100,8 @@ void RobotModel::buildModel(const urdf::ModelInterface& urdf_model, const srdf::
     RCLCPP_DEBUG(LOGGER, "... building mimic joints");
     buildMimic(urdf_model);
 
+    buildLinkage(urdf_model);
+
     RCLCPP_DEBUG(LOGGER, "... computing joint indexing");
     buildJointInfo();
 
@@ -391,6 +393,45 @@ void RobotModel::buildGroupStates(const srdf::Model& srdf_model)
                    group_state.name_.c_str(), group_state.group_.c_str());
     }
   }
+}
+
+
+void RobotModel::buildLinkage(const urdf::ModelInterface& urdf_model){
+
+  for (JointModel* joint_model : joint_model_vector_){
+
+    const urdf::Joint* jm = urdf_model.getJoint(joint_model->getName()).get();
+    if (jm){
+      if(jm->linkage){
+
+        RCLCPP_DEBUG(LOGGER, "Attempting to build linkage %s", jm->linkage->parent_name.c_str());
+        
+
+        JointModelMap::const_iterator jit = joint_model_map_.find(jm->linkage->parent_name);
+        if (jit != joint_model_map_.end())
+        {
+          if (joint_model->getVariableCount() == jit->second->getVariableCount())
+          {
+            joint_model->setLinkage(jit->second, jm->linkage->leg_length, jm->linkage->base_width, jm->linkage->top_width);
+          }
+          else
+          {
+            RCLCPP_ERROR(LOGGER, "Joint '%s' cannot link to joint '%s' because they have different number of DOF",
+                         joint_model->getName().c_str(), jm->mimic->joint_name.c_str());
+          }
+        }
+        else
+        {
+          RCLCPP_ERROR(LOGGER, "Joint '%s' cannot link to unknown joint '%s'", joint_model->getName().c_str(),
+                       jm->mimic->joint_name.c_str());
+        }
+
+
+      }
+    }
+
+  }
+
 }
 
 void RobotModel::buildMimic(const urdf::ModelInterface& urdf_model)
