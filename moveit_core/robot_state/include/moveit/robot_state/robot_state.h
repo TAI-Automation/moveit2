@@ -1728,6 +1728,27 @@ public:
    * @return true if no error
    */
   bool setToIKSolverFrame(Eigen::Isometry3d& pose, const std::string& ik_frame);
+  
+  void updateLinkageJoints(const JointModelGroup* group){
+
+
+    for (const JointModel* jm : group->getLinkageJointModels()){
+
+      const int fvi = jm->getFirstVariableIndex();
+
+      // Get the position based on the index of the linked joint
+      double crank_angle = position_[jm->getLinkage()->getFirstVariableIndex()];
+      
+      double follow = computeLinkage(crank_angle, jm);
+      RCLCPP_DEBUG_STREAM(rclcpp::get_logger("moveit_robot_state.robot_state"), "Updating mimic joints " << follow << " the index is " << fvi << " the parent index is " << jm->getLinkage()->getFirstVariableIndex());
+
+      position_[fvi] = follow;
+
+      markDirtyJointTransforms(jm);
+
+    }
+
+  }
 
 private:
   void allocMemory();
@@ -1771,26 +1792,7 @@ private:
 
   }
 
-  void updateLinkageJoints(const JointModelGroup* group){
 
-
-    for (const JointModel* jm : group->getLinkageJointModels()){
-
-      const int fvi = jm->getFirstVariableIndex();
-
-      // Get the position based on the index of the linked joint
-      double crank_angle = position_[jm->getLinkage()->getFirstVariableIndex()];
-      
-      double follow = computeLinkage(crank_angle, jm);
-      RCLCPP_DEBUG_STREAM(rclcpp::get_logger("moveit_robot_state.robot_state"), "Updating mimic joints " << follow << " the index is " << fvi << " the parent index is " << jm->getLinkage()->getFirstVariableIndex());
-
-      position_[fvi] = follow;
-
-      markDirtyJointTransforms(jm);
-
-    }
-
-  }
 
 
   // This is not the same as updating a single linkage joint.

@@ -401,6 +401,11 @@ void CurrentStateMonitor::jointStateCallback(const sensor_msgs::msg::JointState:
         }
       }
     }
+    // for each group, update linkage joints
+    std::vector<const moveit::core::JointModelGroup *> groups = robot_state_.getRobotModel()->getJointModelGroups();
+    for (const moveit::core::JointModelGroup* group : groups ){
+      robot_state_.updateLinkageJoints(group);
+    }
   }
 
   // callbacks, if needed
