@@ -1734,15 +1734,7 @@ private:
 
 
   // This is not the same as updating a single linkage joint.
-  void updateMimicJoint(const JointModel* joint)
-  {
-    double v = position_[joint->getFirstVariableIndex()];
-    for (const JointModel* jm : joint->getMimicRequests())
-    {
-      position_[jm->getFirstVariableIndex()] = jm->getMimicFactor() * v + jm->getMimicOffset();
-      markDirtyJointTransforms(jm);
-    }
-  }
+  void updateMimicJoint(const JointModel* joint);
 
   /** \brief Update all mimic joints within group */
   void updateMimicJoints(const JointModelGroup* group);

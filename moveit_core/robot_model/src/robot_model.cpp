@@ -106,10 +106,10 @@ void RobotModel::buildModel(const urdf::ModelInterface& urdf_model, const srdf::
       root_link_ = root_joint_->getChildLinkModel();
     RCLCPP_DEBUG(getLogger(), "... building mimic joints");
     buildMimic(urdf_model);
-
+    RCLCPP_DEBUG(getLogger(), "... building linkage joints");
     buildLinkage(urdf_model);
 
-    RCLCPP_DEBUG(LOGGER, "... computing joint indexing");
+    RCLCPP_DEBUG(getLogger(), "... computing joint indexing");
     buildJointInfo();
 
     if (link_models_with_collision_geometry_vector_.empty())
@@ -411,7 +411,7 @@ void RobotModel::buildLinkage(const urdf::ModelInterface& urdf_model){
     if (jm){
       if(jm->linkage){
 
-        RCLCPP_DEBUG(LOGGER, "Attempting to build linkage %s", jm->linkage->parent_name.c_str());
+        RCLCPP_DEBUG(getLogger(), "Attempting to build linkage %s", jm->linkage->parent_name.c_str());
         
 
         JointModelMap::const_iterator jit = joint_model_map_.find(jm->linkage->parent_name);
@@ -423,13 +423,13 @@ void RobotModel::buildLinkage(const urdf::ModelInterface& urdf_model){
           }
           else
           {
-            RCLCPP_ERROR(LOGGER, "Joint '%s' cannot link to joint '%s' because they have different number of DOF",
+            RCLCPP_ERROR(getLogger(), "Joint '%s' cannot link to joint '%s' because they have different number of DOF",
                          joint_model->getName().c_str(), jm->mimic->joint_name.c_str());
           }
         }
         else
         {
-          RCLCPP_ERROR(LOGGER, "Joint '%s' cannot link to unknown joint '%s'", joint_model->getName().c_str(),
+          RCLCPP_ERROR(getLogger(), "Joint '%s' cannot link to unknown joint '%s'", joint_model->getName().c_str(),
                        jm->mimic->joint_name.c_str());
         }
 
