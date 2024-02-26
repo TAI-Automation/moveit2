@@ -1479,7 +1479,7 @@ void RobotModel::getVariableRandomPositions(random_numbers::RandomNumberGenerato
   for (std::size_t i = 0; i < active_joint_model_vector_.size(); ++i)
     active_joint_model_vector_[i]->getVariableRandomPositions(rng, values + active_joint_model_start_index_[i]);
   updateMimicJoints(values);
-  updateLinkageJoints(state);
+  updateLinkageJoints(values);
 
 }
 
@@ -1498,7 +1498,7 @@ void RobotModel::getVariableDefaultPositions(double* values) const
   for (std::size_t i = 0; i < active_joint_model_vector_.size(); ++i)
     active_joint_model_vector_[i]->getVariableDefaultPositions(values + active_joint_model_start_index_[i]);
   updateMimicJoints(values);
-  updateLinkageJoints(state);
+  updateLinkageJoints(values);
 
 }
 
