@@ -399,6 +399,7 @@ void RobotState::setVariablePositions(const std::map<std::string, double>& varia
     const JointModel* jm = robot_model_->getJointOfVariable(index);
     markDirtyJointTransforms(jm);
     updateMimicJoint(jm);
+    updateLinkageJoint(jm);
   }
     // for each group, update linkage joints
   std::vector<const moveit::core::JointModelGroup *> groups = getRobotModel()->getJointModelGroups();
@@ -439,10 +440,7 @@ void RobotState::setVariablePositions(const std::vector<std::string>& variable_n
     const JointModel* jm = robot_model_->getJointOfVariable(index);
     markDirtyJointTransforms(jm);
     updateMimicJoint(jm);
-  }
-  std::vector<const moveit::core::JointModelGroup *> groups = getRobotModel()->getJointModelGroups();
-  for (const moveit::core::JointModelGroup* group : groups ){
-    updateLinkageJoints(group);
+    updateLinkageJoint(jm);
   }
 }
 

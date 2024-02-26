@@ -200,6 +200,7 @@ public:
     {
       markDirtyJointTransforms(jm);
       updateMimicJoint(jm);
+      updateLinkageJoint(jm);
     }
   }
 
@@ -532,6 +533,7 @@ public:
     memcpy(position_ + joint->getFirstVariableIndex(), position, joint->getVariableCount() * sizeof(double));
     markDirtyJointTransforms(joint);
     updateMimicJoint(joint);
+    updateLinkageJoint(joint);
   }
 
   void setJointPositions(const std::string& joint_name, const Eigen::Isometry3d& transform)
@@ -544,6 +546,7 @@ public:
     joint->computeVariablePositions(transform, position_ + joint->getFirstVariableIndex());
     markDirtyJointTransforms(joint);
     updateMimicJoint(joint);
+    updateLinkageJoint(joint);
   }
 
   void setJointVelocities(const JointModel* joint, const double* velocity)
@@ -1437,6 +1440,7 @@ public:
     joint->interpolate(position_ + idx, to.position_ + idx, t, state.position_ + idx);
     state.markDirtyJointTransforms(joint);
     state.updateMimicJoint(joint);
+    state.updateLinkageJoint(joint);
   }
 
   void enforceBounds();
@@ -1453,6 +1457,7 @@ public:
     {
       markDirtyJointTransforms(joint);
       updateMimicJoint(joint);
+      updateLinkageJoint(joint);
     }
   }
 
@@ -1465,6 +1470,7 @@ public:
     {
       // no need to mark transforms dirty, as the transform hasn't changed
       updateMimicJoint(joint);
+      updateLinkageJoint(joint);
     }
   }
 
@@ -1740,7 +1746,6 @@ public:
       double crank_angle = position_[jm->getLinkage()->getFirstVariableIndex()];
       
       double follow = computeLinkage(crank_angle, jm);
-      RCLCPP_DEBUG_STREAM(rclcpp::get_logger("moveit_robot_state.robot_state"), "Updating mimic joints " << follow << " the index is " << fvi << " the parent index is " << jm->getLinkage()->getFirstVariableIndex());
 
       position_[fvi] = follow;
 
@@ -1805,6 +1810,18 @@ private:
       markDirtyJointTransforms(jm);
     }
   }
+
+  // This is not the same as updating a single linkage joint.
+  void updateLinkageJoint(const JointModel* joint)
+  {
+    double v = position_[joint->getFirstVariableIndex()];
+    for (const JointModel* jm : joint->getLinkageRequests())
+    {
+      position_[jm->getFirstVariableIndex()] = computeLinkage(v, jm);
+      markDirtyJointTransforms(jm);
+    }
+  }
+
 
   /** \brief Update all mimic joints within group */
   void updateMimicJoints(const JointModelGroup* group)

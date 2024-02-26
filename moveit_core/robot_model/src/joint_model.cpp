@@ -270,6 +270,11 @@ void JointModel::addMimicRequest(const JointModel* joint)
   mimic_requests_.push_back(joint);
 }
 
+void JointModel::addLinkageRequest(const JointModel* joint)
+{
+  linkage_requests_.push_back(joint);
+}
+
 void JointModel::addDescendantJointModel(const JointModel* joint)
 {
   descendant_joint_models_.push_back(joint);
