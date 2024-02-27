@@ -905,7 +905,7 @@ bool TimeOptimalTrajectoryGeneration::computeTimeStamps(robot_trajectory::RobotT
   {
     RCLCPP_ERROR(LOGGER, "Failed to get active variable indices.");
   }
-
+  // TODO(pmnev) Ensure this is working correctly with mimic and linkage joints after merge.
   const size_t num_active_joints = active_joint_indices.size();
   Eigen::VectorXd max_velocity(num_active_joints);
   Eigen::VectorXd max_acceleration(num_active_joints);

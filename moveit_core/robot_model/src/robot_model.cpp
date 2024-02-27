@@ -264,9 +264,11 @@ void RobotModel::buildJointInfo()
   variable_names_.reserve(joint_model_vector_.size());
   joints_of_variable_.reserve(joint_model_vector_.size());
 
-  for (const auto& joint : joint_model_vector_)
+
+  // this thing is BUGGED  TODO(pmnev) fix this upon merge.
+  for (std::size_t i = 0; i < joint_model_vector_.size(); ++i)
   {
-    const std::vector<std::string>& name_order = joint->getVariableNames();
+        const std::vector<std::string>& name_order = joint->getVariableNames();
 
     // compute index map
     if (!name_order.empty())
