@@ -1046,7 +1046,7 @@ void RobotState::harmonizePosition(const JointModel* joint)
   {
     // no need to mark transforms dirty, as the transform hasn't changed
     updateMimicJoint(joint);
-    updateLinkagejoint(joint);
+    updateLinkageJoint(joint);
   }
 }
 

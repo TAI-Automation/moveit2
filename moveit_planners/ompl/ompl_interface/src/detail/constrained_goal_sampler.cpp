@@ -137,7 +137,7 @@ bool ConstrainedGoalSampler::sampleUsingConstraintSampler(const ob::GoalLazySamp
       {
         
         work_state_.update();
-        RCLCPP_INFO(LOGGER, "Attempting to do constraint decisions .... ");
+        RCLCPP_INFO(getLogger(), "Attempting to do constraint decisions .... ");
         // TODO(pmnev): Figure out what is going wrong here.
 
         if (kinematic_constraint_set_->decide(work_state_, verbose).satisfied)
