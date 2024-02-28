@@ -291,6 +291,11 @@ ConstraintEvaluationResult JointConstraint::decide(const moveit::core::RobotStat
   if (!joint_model_)
     return ConstraintEvaluationResult(true, 0.0);
 
+  // TODO(pmnev) test if this is the only viable fix
+  // if (joint_model_->getLinkage()){
+  //   return ConstraintEvaluationResult(true, 0.0);
+  // }
+
   double current_joint_position = state.getVariablePosition(joint_variable_index_);
   double dif = 0.0;
 

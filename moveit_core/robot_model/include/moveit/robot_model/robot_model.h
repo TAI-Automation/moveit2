@@ -209,6 +209,13 @@ public:
   {
     return mimic_joints_;
   }
+  
+  /** \brief Get the array of linkage joints, in the order they appear
+      in the robot state. */
+  const std::vector<const JointModel*>& getLinkageJointModels() const
+  {
+    return linkage_joints_;
+  }
 
   const JointModel* getJointOfVariable(int variable_index) const
   {
@@ -471,6 +478,14 @@ protected:
   /** \brief Update the variable values for the state of a group with respect to the mimic joints. */
   void updateMimicJoints(double* values) const;
 
+
+  /** \brief Calculate the linkage joint*/
+  double computeLinkage(const double crank, const JointModel* jm) const;
+
+
+  /** \brief Update the variable values for the state of a group with respect to the linkage joints. */
+  void updateLinkageJoints(double* values) const;
+
   // GENERIC INFO
 
   /** \brief The name of the robot */
@@ -541,6 +556,9 @@ protected:
 
   /** \brief The set of mimic joints this model contains */
   std::vector<const JointModel*> mimic_joints_;
+
+    /** \brief The set of linkage joints this model contains */
+  std::vector<const JointModel*> linkage_joints_;
 
   std::vector<const JointModel*> single_dof_joints_;
 

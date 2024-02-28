@@ -106,6 +106,7 @@ void RobotModel::buildModel(const urdf::ModelInterface& urdf_model, const srdf::
       root_link_ = root_joint_->getChildLinkModel();
     RCLCPP_DEBUG(getLogger(), "... building mimic joints");
     buildMimic(urdf_model);
+
     RCLCPP_DEBUG(getLogger(), "... building linkage joints");
     buildLinkage(urdf_model);
 
@@ -167,6 +168,9 @@ void computeDescendantsHelper(const JointModel* joint, std::vector<const JointMo
   const std::vector<const JointModel*>& mim = joint->getMimicRequests();
   for (const JointModel* mimic_joint_model : mim)
     computeDescendantsHelper(mimic_joint_model, parents, seen, descendants);
+  const std::vector<const JointModel*>& lin = joint->getLinkageRequests();
+  for (const JointModel* linkage_joint_model : lin)
+    computeDescendantsHelper(linkage_joint_model, parents, seen, descendants);
   parents.pop_back();
 }
 
@@ -266,7 +270,7 @@ void RobotModel::buildJointInfo()
   active_joint_model_start_index_.reserve(joint_model_vector_.size());
   variable_names_.reserve(joint_model_vector_.size());
   joints_of_variable_.reserve(joint_model_vector_.size());
-
+  // this thing is BUGGED  TODO(pmnev) fix this upon merge.
   for (const auto& joint : joint_model_vector_)
   {
     const std::vector<std::string>& name_order = joint->getVariableNames();
@@ -280,7 +284,7 @@ void RobotModel::buildJointInfo()
         variable_names_.push_back(name_order[j]);
         joints_of_variable_.push_back(joint);
       }
-      if (joint->getMimic() == nullptr)
+      if (joint->getMimic() == nullptr && joint->getLinkage() == nullptr)
       {
         active_joint_model_start_index_.push_back(variable_count_);
         active_joint_model_vector_.push_back(joint);
@@ -424,19 +428,29 @@ void RobotModel::buildLinkage(const urdf::ModelInterface& urdf_model){
           else
           {
             RCLCPP_ERROR(getLogger(), "Joint '%s' cannot link to joint '%s' because they have different number of DOF",
-                         joint_model->getName().c_str(), jm->mimic->joint_name.c_str());
+                         joint_model->getName().c_str(), jm->linkage->parent_name.c_str());
           }
         }
         else
         {
           RCLCPP_ERROR(getLogger(), "Joint '%s' cannot link to unknown joint '%s'", joint_model->getName().c_str(),
-                       jm->mimic->joint_name.c_str());
+                       jm->linkage->parent_name.c_str());
         }
-
-
       }
     }
 
+  }
+  //TODO(pmnev) add support for multi linkage joints eventually.
+
+
+  // build linkage requests
+  for (JointModel* joint_model : joint_model_vector_)
+  {
+    if (joint_model->getLinkage())
+    {
+      const_cast<JointModel*>(joint_model->getLinkage())->addLinkageRequest(joint_model);
+      linkage_joints_.push_back(joint_model);
+    }
   }
 
 }
@@ -510,6 +524,7 @@ void RobotModel::buildMimic(const urdf::ModelInterface& urdf_model)
       mimic_joints_.push_back(joint_model);
     }
   }
+
 }
 
 bool RobotModel::hasEndEffector(const std::string& eef) const
@@ -866,6 +881,10 @@ bool RobotModel::addJointModelGroup(const srdf::Model::Group& gc)
       const std::vector<const JointModel*>& ms = sg->getMimicJointModels();
       for (const JointModel* m : ms)
         jset.insert(m);
+      // linkage joints
+      const std::vector<const JointModel*>& ls = sg->getLinkageJointModels();
+      for (const JointModel* l : ls)
+        jset.insert(l);  
     }
   }
 
@@ -1431,11 +1450,42 @@ void RobotModel::updateMimicJoints(double* values) const
   }
 }
 
+double RobotModel::computeLinkage(const double crank, const JointModel* jm) const {
+
+  double base_width = jm->getLinkageBaseWidth();
+  double leg_length = jm->getLinkageLegLength();
+  double top_width = jm->getLinkageTopWidth();
+
+  double crank_angle = -crank+M_PI_2;
+  double diag_length = sqrt(pow(base_width,2.0)+ pow(leg_length,2.0) -2*leg_length*base_width*cos(crank_angle));
+  double psi = asin(sin(crank_angle)/diag_length*base_width);
+  double phi = acos((pow(top_width,2)+pow(diag_length,2)-pow(leg_length,2))/(2*top_width*diag_length)); 
+  double gamma = psi+phi;
+
+  return M_PI_2-gamma;
+
+}
+
+void RobotModel::updateLinkageJoints(double* values) const
+{
+  for (const JointModel* linkage_joint : linkage_joints_)
+  {
+    int src = linkage_joint->getLinkage()->getFirstVariableIndex();
+    int dest = linkage_joint->getFirstVariableIndex();
+
+    values[dest] = computeLinkage(values[src], linkage_joint);
+
+  }
+}
+
+
 void RobotModel::getVariableRandomPositions(random_numbers::RandomNumberGenerator& rng, double* values) const
 {
   for (std::size_t i = 0; i < active_joint_model_vector_.size(); ++i)
     active_joint_model_vector_[i]->getVariableRandomPositions(rng, values + active_joint_model_start_index_[i]);
   updateMimicJoints(values);
+  updateLinkageJoints(values);
+
 }
 
 void RobotModel::getVariableRandomPositions(random_numbers::RandomNumberGenerator& rng,
@@ -1453,6 +1503,8 @@ void RobotModel::getVariableDefaultPositions(double* values) const
   for (std::size_t i = 0; i < active_joint_model_vector_.size(); ++i)
     active_joint_model_vector_[i]->getVariableDefaultPositions(values + active_joint_model_start_index_[i]);
   updateMimicJoints(values);
+  updateLinkageJoints(values);
+
 }
 
 void RobotModel::getVariableDefaultPositions(std::map<std::string, double>& values) const
@@ -1521,8 +1573,10 @@ bool RobotModel::enforcePositionBounds(double* state, const JointBoundsVector& a
                                                              *active_joint_bounds[i]))
       change = true;
   }
-  if (change)
+  if (change){
     updateMimicJoints(state);
+    updateLinkageJoints(state);
+  }
   return change;
 }
 
@@ -1550,6 +1604,8 @@ void RobotModel::interpolate(const double* from, const double* to, double t, dou
   }
   // now we update mimic as needed
   updateMimicJoints(state);
+  updateLinkageJoints(state);
+
 }
 
 void RobotModel::setKinematicsAllocators(const std::map<std::string, SolverAllocatorFn>& allocators)

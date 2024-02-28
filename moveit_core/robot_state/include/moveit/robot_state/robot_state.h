@@ -200,6 +200,7 @@ public:
     {
       markDirtyJointTransforms(jm);
       updateMimicJoint(jm);
+      updateLinkageJoint(jm);
     }
   }
 
@@ -1678,7 +1679,6 @@ public:
       double crank_angle = position_[jm->getLinkage()->getFirstVariableIndex()];
       
       double follow = computeLinkage(crank_angle, jm);
-      RCLCPP_DEBUG_STREAM(rclcpp::get_logger("moveit_robot_state.robot_state"), "Updating mimic joints " << follow << " the index is " << fvi << " the parent index is " << jm->getLinkage()->getFirstVariableIndex());
 
       position_[fvi] = follow;
 
@@ -1735,6 +1735,18 @@ private:
 
   // This is not the same as updating a single linkage joint.
   void updateMimicJoint(const JointModel* joint);
+
+  // This is not the same as updating a single linkage joint.
+  void updateLinkageJoint(const JointModel* joint)
+  {
+    double v = position_[joint->getFirstVariableIndex()];
+    for (const JointModel* jm : joint->getLinkageRequests())
+    {
+      position_[jm->getFirstVariableIndex()] = computeLinkage(v, jm);
+      markDirtyJointTransforms(jm);
+    }
+  }
+
 
   /** \brief Update all mimic joints within group */
   void updateMimicJoints(const JointModelGroup* group);
