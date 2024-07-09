@@ -591,7 +591,7 @@ public:
   bool computeJointVariableIndices(const std::vector<std::string>& joint_names,
                                    std::vector<size_t>& joint_bijection) const;
 
-  double computeLinkage(const double crank, const JointModel* jm) const;                                   
+  double computeLinkage(const double crank, const double base_width, const double top_width, const double leg_length) const;                                   
 
 protected:
   /** \brief Update the variable values for the state of a group with respect to the mimic joints. This only updates
@@ -755,7 +755,21 @@ protected:
     double offset;
   };
 
+
+  struct GroupLinkageUpdate
+  {
+    GroupLinkageUpdate(int s, int d, double bw, double tw, double ll) : src(s), dest(d), base_width(bw), top_width(tw), leg_length(ll)
+    {
+    }
+    int src;
+    int dest;
+    double base_width;
+    double top_width;
+    double leg_length;
+  };
+
   std::vector<GroupMimicUpdate> group_mimic_update_;
+  std::vector<GroupLinkageUpdate> group_linkage_update_;
 
   std::pair<KinematicsSolver, KinematicsSolverMap> group_kinematics_;
 

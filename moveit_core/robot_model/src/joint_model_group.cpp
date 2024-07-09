@@ -221,6 +221,19 @@ JointModelGroup::JointModelGroup(const std::string& group_name, const srdf::Mode
     }
   }
 
+
+  for (const JointModel* linkage_joint : linkage_joints_)
+  {
+    if (hasJointModel(linkage_joint->getLinkage()->getName()))
+    {
+      int src = joint_variables_index_map_[linkage_joint->getLinkage()->getName()];
+      int dest = joint_variables_index_map_[linkage_joint->getName()];
+      GroupLinkageUpdate lu(src, dest, linkage_joint->getLinkageBaseWidth(),linkage_joint->getLinkageTopWidth(),linkage_joint->getLinkageLegLength());
+      group_linkage_update_.push_back(lu);
+    }
+  }
+
+
   // now we need to make another pass for group links (we include the fixed joints here)
   std::set<const LinkModel*> group_links_set;
   for (const JointModel* joint_model : joint_model_vector_)
@@ -496,11 +509,8 @@ void JointModelGroup::interpolate(const double* from, const double* to, double t
 }
 
 
-  double JointModelGroup::computeLinkage(const double crank, const JointModel* jm) const {
+  double JointModelGroup::computeLinkage(const double crank, const double base_width, const double top_width, const double leg_length) const {
 
-    double base_width = jm->getLinkageBaseWidth();
-    double leg_length = jm->getLinkageLegLength();
-    double top_width = jm->getLinkageTopWidth();
 
     double crank_angle = -crank+M_PI_2;
     double diag_length = sqrt(pow(base_width,2.0)+ pow(leg_length,2.0) -2*leg_length*base_width*cos(crank_angle));
@@ -513,12 +523,12 @@ void JointModelGroup::interpolate(const double* from, const double* to, double t
   }
 
 void JointModelGroup::updateLinkageJoints(double* values) const
-{
+{ 
   // update linkage (only local joints as we are dealing with a local group state)
-  for (const JointModel* jm : linkage_joints_){
-    values[jm->getFirstVariableIndex()] = computeLinkage(values[jm->getLinkage()->getFirstVariableIndex()],jm);
-  }
-    
+
+  for (const GroupLinkageUpdate& linkage_update : group_linkage_update_){
+    values[linkage_update.dest] = computeLinkage(values[linkage_update.src], linkage_update.base_width, linkage_update.top_width, linkage_update.leg_length);
+  }    
 }
 
 void JointModelGroup::updateMimicJoints(double* values) const
