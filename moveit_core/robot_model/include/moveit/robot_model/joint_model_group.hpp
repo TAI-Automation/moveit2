@@ -178,6 +178,11 @@ public:
     return mimic_joints_;
   }
 
+  const std::vector<const JointModel*>& getLinkageJointModels() const
+  {
+    return linkage_joints_;
+  }
+
   /** \brief Get the array of continuous joints used in this group (may include mimic joints). */
   const std::vector<const JointModel*>& getContinuousJointModels() const
   {
@@ -602,12 +607,16 @@ public:
    * @return std::pair<Eigen::VectorXd, Eigen::VectorXd> Containing the velocity and acceleration limits
    */
   [[nodiscard]] std::pair<Eigen::VectorXd, Eigen::VectorXd> getMaxVelocitiesAndAccelerationBounds() const;
+  double computeLinkage(const double crank, const double base_width, const double top_width, const double leg_length) const;                                   
 
 protected:
   /** \brief Update the variable values for the state of a group with respect to the mimic joints. This only updates
       mimic joints that have the parent in this group. If there is a joint mimicking one that is outside the group,
       there are no values to be read (\e values is only the group state) */
   void updateMimicJoints(double* values) const;
+
+  void updateLinkageJoints(double* values) const;
+
 
   /** \brief Owner model */
   const RobotModel* parent_model_;
@@ -632,6 +641,9 @@ protected:
 
   /** \brief Joints that mimic other joints */
   std::vector<const JointModel*> mimic_joints_;
+
+  /** \brief Joints that link to other joints */
+  std::vector<const JointModel*> linkage_joints_;
 
   /** \brief The set of continuous joints this group contains */
   std::vector<const JointModel*> continuous_joint_model_vector_;
@@ -759,7 +771,21 @@ protected:
     double offset;
   };
 
+
+  struct GroupLinkageUpdate
+  {
+    GroupLinkageUpdate(int s, int d, double bw, double tw, double ll) : src(s), dest(d), base_width(bw), top_width(tw), leg_length(ll)
+    {
+    }
+    int src;
+    int dest;
+    double base_width;
+    double top_width;
+    double leg_length;
+  };
+
   std::vector<GroupMimicUpdate> group_mimic_update_;
+  std::vector<GroupLinkageUpdate> group_linkage_update_;
 
   std::pair<KinematicsSolver, KinematicsSolverMap> group_kinematics_;
 

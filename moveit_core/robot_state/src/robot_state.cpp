@@ -280,6 +280,7 @@ void RobotState::setToRandomPositions(const JointModelGroup* group, random_numbe
   const std::vector<const JointModel*>& joints = group->getActiveJointModels();
   for (const JointModel* joint : joints)
     joint->getVariableRandomPositions(rng, &position_[joint->getFirstVariableIndex()]);
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -304,6 +305,7 @@ void RobotState::setToRandomPositionsNearBy(const JointModelGroup* group, const 
     joints[i]->getVariableRandomPositionsNearBy(rng, &position_.at(joints[i]->getFirstVariableIndex()),
                                                 &seed.position_.at(idx), distances[i]);
   }
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -325,6 +327,7 @@ void RobotState::setToRandomPositionsNearBy(const JointModelGroup* group, const 
     joint->getVariableRandomPositionsNearBy(rng, &position_.at(joint->getFirstVariableIndex()), &seed.position_.at(idx),
                                             distance);
   }
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -367,6 +370,7 @@ void RobotState::setVariablePositions(const std::map<std::string, double>& varia
     const JointModel* jm = robot_model_->getJointOfVariable(index);
     markDirtyJointTransforms(jm);
     updateMimicJoint(jm);
+    updateLinkageJoint(jm);
   }
 }
 
@@ -402,6 +406,7 @@ void RobotState::setVariablePositions(const std::vector<std::string>& variable_n
     const JointModel* jm = robot_model_->getJointOfVariable(index);
     markDirtyJointTransforms(jm);
     updateMimicJoint(jm);
+    updateLinkageJoint(jm);
   }
 }
 
@@ -492,6 +497,7 @@ void RobotState::setJointPositions(const JointModel* joint, const double* positi
   memcpy(&position_.at(joint->getFirstVariableIndex()), position, joint->getVariableCount() * sizeof(double));
   markDirtyJointTransforms(joint);
   updateMimicJoint(joint);
+  updateLinkageJoint(joint);
 }
 
 void RobotState::setJointPositions(const JointModel* joint, const Eigen::Isometry3d& transform)
@@ -503,6 +509,7 @@ void RobotState::setJointPositions(const JointModel* joint, const Eigen::Isometr
   joint->computeVariablePositions(transform, &position_.at(joint->getFirstVariableIndex()));
   markDirtyJointTransforms(joint);
   updateMimicJoint(joint);
+  updateLinkageJoint(joint);
 }
 
 void RobotState::setJointVelocities(const JointModel* joint, const double* velocity)
@@ -580,6 +587,7 @@ void RobotState::setJointGroupPositions(const JointModelGroup* group, const doub
     for (std::size_t i = 0; i < il.size(); ++i)
       position_[il[i]] = gstate[i];
   }
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -588,6 +596,8 @@ void RobotState::setJointGroupPositions(const JointModelGroup* group, const Eige
   const std::vector<int>& il = group->getVariableIndexList();
   for (std::size_t i = 0; i < il.size(); ++i)
     position_[il[i]] = values(i);
+
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -600,6 +610,7 @@ void RobotState::setJointGroupActivePositions(const JointModelGroup* group, cons
     setJointPositions(jm, &gstate[i]);
     i += jm->getVariableCount();
   }
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -612,6 +623,7 @@ void RobotState::setJointGroupActivePositions(const JointModelGroup* group, cons
     setJointPositions(jm, &values(i));
     i += jm->getVariableCount();
   }
+  updateLinkageJoints(group);
   updateMimicJoints(group);
 }
 
@@ -1007,6 +1019,7 @@ void RobotState::enforcePositionBounds(const JointModel* joint)
   {
     markDirtyJointTransforms(joint);
     updateMimicJoint(joint);
+    updateLinkageJoint(joint);
   }
 }
 
@@ -1032,6 +1045,7 @@ void RobotState::harmonizePosition(const JointModel* joint)
   {
     // no need to mark transforms dirty, as the transform hasn't changed
     updateMimicJoint(joint);
+    updateLinkageJoint(joint);
   }
 }
 
@@ -1153,6 +1167,7 @@ void RobotState::interpolate(const RobotState& to, double t, RobotState& state, 
     const int idx = joint->getFirstVariableIndex();
     joint->interpolate(&position_.at(idx), &to.position_.at(idx), t, &state.position_.at(idx));
   }
+  state.updateLinkageJoints(joint_group);
   state.updateMimicJoints(joint_group);
 }
 
@@ -1167,6 +1182,7 @@ void RobotState::interpolate(const RobotState& to, double t, RobotState& state, 
   joint->interpolate(&position_.at(idx), &to.position_.at(idx), t, &state.position_.at(idx));
   state.markDirtyJointTransforms(joint);
   state.updateMimicJoint(joint);
+  state.updateLinkageJoint(joint);
 }
 
 void RobotState::setAttachedBodyUpdateCallback(const AttachedBodyCallback& callback)

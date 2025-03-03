@@ -70,6 +70,7 @@ bool includesParent(const JointModel* joint, const JointModelGroup* group)
       found = true;
       break;
     }
+    // TODO check linkage joints too
     else if (joint->getMimic() != nullptr)
     {
       const JointModel* mjoint = joint->getMimic();
@@ -145,11 +146,15 @@ JointModelGroup::JointModelGroup(const std::string& group_name, const srdf::Mode
 
       if (joint_model->getMimic() == nullptr)
       {
-        active_joint_model_vector_.push_back(joint_model);
-        active_joint_model_name_vector_.push_back(joint_model->getName());
-        active_joint_model_start_index_.push_back(variable_count_);
-        active_joint_models_bounds_.push_back(&joint_model->getVariableBounds());
-        active_variable_count_ += vc;
+        if (joint_model->getLinkage()){
+          linkage_joints_.push_back(joint_model);
+        } else {
+          active_joint_model_vector_.push_back(joint_model);
+          active_joint_model_name_vector_.push_back(joint_model->getName());
+          active_joint_model_start_index_.push_back(variable_count_);
+          active_joint_models_bounds_.push_back(&joint_model->getVariableBounds());
+          active_variable_count_ += vc; 
+        }
       }
       else
         mimic_joints_.push_back(joint_model);
@@ -216,6 +221,19 @@ JointModelGroup::JointModelGroup(const std::string& group_name, const srdf::Mode
       group_mimic_update_.push_back(mu);
     }
   }
+
+
+  for (const JointModel* linkage_joint : linkage_joints_)
+  {
+    if (hasJointModel(linkage_joint->getLinkage()->getName()))
+    {
+      int src = joint_variables_index_map_[linkage_joint->getLinkage()->getName()];
+      int dest = joint_variables_index_map_[linkage_joint->getName()];
+      GroupLinkageUpdate lu(src, dest, linkage_joint->getLinkageBaseWidth(),linkage_joint->getLinkageTopWidth(),linkage_joint->getLinkageLegLength());
+      group_linkage_update_.push_back(lu);
+    }
+  }
+
 
   // now we need to make another pass for group links (we include the fixed joints here)
   std::set<const LinkModel*> group_links_set;
@@ -354,7 +372,7 @@ void JointModelGroup::getVariableRandomPositions(random_numbers::RandomNumberGen
     active_joint_model_vector_[i]->getVariableRandomPositions(rng, values + active_joint_model_start_index_[i],
                                                               *active_joint_bounds[i]);
   }
-
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 
@@ -370,6 +388,7 @@ void JointModelGroup::getVariableRandomPositionsNearBy(random_numbers::RandomNum
                                                                     near + active_joint_model_start_index_[i],
                                                                     distance);
   }
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 
@@ -396,6 +415,7 @@ void JointModelGroup::getVariableRandomPositionsNearBy(random_numbers::RandomNum
                                                                     near + active_joint_model_start_index_[i],
                                                                     distance);
   }
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 
@@ -417,6 +437,7 @@ void JointModelGroup::getVariableRandomPositionsNearBy(random_numbers::RandomNum
                                                                     near + active_joint_model_start_index_[i],
                                                                     distances[i]);
   }
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 
@@ -443,8 +464,10 @@ bool JointModelGroup::enforcePositionBounds(double* state, const JointBoundsVect
                                                              *active_joint_bounds[i]))
       change = true;
   }
-  if (change)
+  if (change){
+    updateLinkageJoints(state);
     updateMimicJoints(state);
+  }
   return change;
 }
 
@@ -482,7 +505,31 @@ void JointModelGroup::interpolate(const double* from, const double* to, double t
   }
 
   // now we update mimic as needed
+  updateLinkageJoints(state);
   updateMimicJoints(state);
+}
+
+
+  double JointModelGroup::computeLinkage(const double crank, const double base_width, const double top_width, const double leg_length) const {
+
+
+    double crank_angle = -crank+M_PI_2;
+    double diag_length = sqrt(pow(base_width,2.0)+ pow(leg_length,2.0) -2*leg_length*base_width*cos(crank_angle));
+    double psi = asin(sin(crank_angle)/diag_length*base_width);
+    double phi = acos((pow(top_width,2)+pow(diag_length,2)-pow(leg_length,2))/(2*top_width*diag_length)); 
+    double gamma = psi+phi;
+
+    return M_PI_2-gamma;
+
+  }
+
+void JointModelGroup::updateLinkageJoints(double* values) const
+{ 
+  // update linkage (only local joints as we are dealing with a local group state)
+
+  for (const GroupLinkageUpdate& linkage_update : group_linkage_update_){
+    values[linkage_update.dest] = computeLinkage(values[linkage_update.src], linkage_update.base_width, linkage_update.top_width, linkage_update.leg_length);
+  }    
 }
 
 void JointModelGroup::updateMimicJoints(double* values) const
@@ -511,6 +558,7 @@ void JointModelGroup::getVariableDefaultPositions(double* values) const
 {
   for (std::size_t i = 0; i < active_joint_model_vector_.size(); ++i)
     active_joint_model_vector_[i]->getVariableDefaultPositions(values + active_joint_model_start_index_[i]);
+  updateLinkageJoints(values);
   updateMimicJoints(values);
 }
 

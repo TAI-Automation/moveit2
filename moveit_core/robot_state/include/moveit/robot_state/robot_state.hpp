@@ -200,6 +200,7 @@ public:
     {
       markDirtyJointTransforms(jm);
       updateMimicJoint(jm);
+      updateLinkageJoint(jm);
     }
   }
 
@@ -1667,6 +1668,26 @@ public:
    * @return true if no error
    */
   bool setToIKSolverFrame(Eigen::Isometry3d& pose, const std::string& ik_frame);
+  
+  void updateLinkageJoints(const JointModelGroup* group){
+
+
+    for (const JointModel* jm : group->getLinkageJointModels()){
+
+      const int fvi = jm->getFirstVariableIndex();
+
+      // Get the position based on the index of the linked joint
+      double crank_angle = position_[jm->getLinkage()->getFirstVariableIndex()];
+      
+      double follow = computeLinkage(crank_angle, jm);
+
+      position_[fvi] = follow;
+
+      markDirtyJointTransforms(jm);
+
+    }
+
+  }
 
 private:
   void allocMemory();
@@ -1693,7 +1714,37 @@ private:
   void markAcceleration();
   void markEffort();
 
+  // TODO move these to implementation file.
+  double computeLinkage(const double crank, const JointModel* jm) const {
+
+    double base_width = jm->getLinkageBaseWidth();
+    double leg_length = jm->getLinkageLegLength();
+    double top_width = jm->getLinkageTopWidth();
+
+    double crank_angle = -crank+M_PI_2;
+    double diag_length = sqrt(pow(base_width,2.0)+ pow(leg_length,2.0) -2*leg_length*base_width*cos(crank_angle));
+    double psi = asin(sin(crank_angle)/diag_length*base_width);
+    double phi = acos((pow(top_width,2)+pow(diag_length,2)-pow(leg_length,2))/(2*top_width*diag_length)); 
+    double gamma = psi+phi;
+
+    return M_PI_2-gamma;
+
+  }
+
+  // This is not the same as updating a single linkage joint.
   void updateMimicJoint(const JointModel* joint);
+
+  // This is not the same as updating a single linkage joint.
+  void updateLinkageJoint(const JointModel* joint)
+  {
+    double v = position_[joint->getFirstVariableIndex()];
+    for (const JointModel* jm : joint->getLinkageRequests())
+    {
+      position_[jm->getFirstVariableIndex()] = computeLinkage(v, jm);
+      markDirtyJointTransforms(jm);
+    }
+  }
+
 
   /** \brief Update all mimic joints within group */
   void updateMimicJoints(const JointModelGroup* group);

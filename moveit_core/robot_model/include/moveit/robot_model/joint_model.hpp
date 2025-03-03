@@ -386,6 +386,28 @@ public:
   /** \brief Get the dimension of the state space that corresponds to this joint */
   virtual unsigned int getStateSpaceDimension() const = 0;
 
+
+  const JointModel* getLinkage() const
+  {
+    return linkage_joint_;
+  }
+
+
+  double getLinkageLegLength() const {
+    return linkage_leg_length_;
+  }
+
+  double getLinkageBaseWidth() const {
+    return linkage_base_width_;
+  }
+  
+  double getLinkageTopWidth() const {
+    return linkage_top_width_;
+  }
+
+
+
+
   /** \brief Get the joint this one is mimicking */
   const JointModel* getMimic() const
   {
@@ -404,6 +426,9 @@ public:
     return mimic_factor_;
   }
 
+  void setLinkage(const JointModel* linked, double leg_length, double base_width, double top_width);
+
+
   /** \brief Mark this joint as mimicking \e mimic using \e factor and \e offset */
   void setMimic(const JointModel* mimic, double factor, double offset);
 
@@ -413,8 +438,16 @@ public:
     return mimic_requests_;
   }
 
+    /** \brief The joint models whose values would be modified if the value of this joint changed */
+  const std::vector<const JointModel*>& getLinkageRequests() const
+  {
+    return linkage_requests_;
+  }
+
   /** \brief Notify this joint that there is another joint that mimics it */
   void addMimicRequest(const JointModel* joint);
+  void addLinkageRequest(const JointModel* joint);
+
   void addDescendantJointModel(const JointModel* joint);
   void addDescendantLinkModel(const LinkModel* link);
 
@@ -511,6 +544,15 @@ protected:
   /** \brief The link after this joint */
   const LinkModel* child_link_model_;
 
+  /** The joint this one linkages to */
+  const JointModel* linkage_joint_;
+
+  double linkage_leg_length_;
+  
+  double linkage_base_width_;
+
+  double linkage_top_width_;
+
   /** \brief The joint this one mimics (nullptr for joints that do not mimic) */
   const JointModel* mimic_;
 
@@ -522,6 +564,9 @@ protected:
 
   /** \brief The set of joints that should get a value copied to them when this joint changes */
   std::vector<const JointModel*> mimic_requests_;
+
+    /** \brief The set of joints that should get a value copied to them when this joint changes (linkage variant)*/
+  std::vector<const JointModel*> linkage_requests_;
 
   /** \brief Pointers to all the links that will be moved if this joint changes value */
   std::vector<const LinkModel*> descendant_link_models_;

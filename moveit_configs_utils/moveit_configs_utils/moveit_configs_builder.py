@@ -187,6 +187,12 @@ class MoveItConfigsBuilder(ParameterBuilder):
                     self.__urdf_xacro_args = dict(
                         arg.split(":=") for arg in xacro_args.split(" ") if arg
                     )
+            
+            if (urdf_config and (xacro_args := urdf_config.get("xacro_args")) is not None):
+                self.__urdf_xacro_args = dict(
+                    arg.split(":=") for arg in xacro_args.split(" ") if arg
+                )
+
 
             if srdf_config := config.get("srdf", config.get("SRDF")):
                 self.__srdf_file_path = Path(srdf_config["relative_path"])
